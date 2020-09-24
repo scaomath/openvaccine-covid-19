@@ -1,7 +1,7 @@
 from common import *
 from lib.net.layer_np import *
 
-data_dir = '/root/share1/kaggle/2020/open_vaccine/data/stanford-covid-vaccine'
+data_dir = '/Users/scao/Documents/Coding/openvaccine-covid-19/data'
 
 target_col = ['reactivity', 'deg_Mg_pH10', 'deg_Mg_50C', 'deg_pH10', 'deg_50C']
 error_col  = ['reactivity_error', 'deg_error_Mg_pH10', 'deg_error_Mg_50C', 'deg_error_pH10', 'deg_error_50C']
