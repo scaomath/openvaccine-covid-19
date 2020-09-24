@@ -5,7 +5,6 @@ from lib.net.layer_np import *
 
 from dataset import *
 from model import *
-from remote import *
 
 
 def np_mc_rmse(predict, target):
