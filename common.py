@@ -1,26 +1,30 @@
+# import os
+# os.environ['CUDA_VISIBLE_DEVICES']='0'
+
 from lib.include import *
 from lib.utility.draw import *
 from lib.utility.file import *
-from lib.net.rate import *
 
+from lib.include_torch import *
+from lib.net.rate import *
+from lib.net.layer_np import *
+
+import skimage.io
+#import openslide
 
 #---------------------------------------------------------------------------------
 COMMON_STRING ='@%s:  \n' % os.path.basename(__file__)
-
 if 1:
-    SEED = int(time.time()) #35202   #35202  #123  #
-    random.seed(SEED)
-    np.random.seed(SEED)
-    torch.manual_seed(SEED)
-    torch.cuda.manual_seed_all(SEED)
-    COMMON_STRING += '\tset random seed\n'
-    COMMON_STRING += '\t\tSEED = %d\n'%SEED
+    seed = int(time.time())#335202   #5202  #123  #
+    seed_py(seed)
+    seed_torch(seed)
 
-    torch.backends.cudnn.benchmark     = True  ##uses the inbuilt cudnn auto-tuner to find the fastest convolution algorithms. -
+    torch.backends.cudnn.benchmark     = False  ##uses the inbuilt cudnn auto-tuner to find the fastest convolution algorithms. -
     torch.backends.cudnn.enabled       = True
     torch.backends.cudnn.deterministic = True
 
-    COMMON_STRING += '\tset cuda environment\n'
+    COMMON_STRING += '\tpytorch\n'
+    COMMON_STRING += '\t\tseed = %d\n'%seed
     COMMON_STRING += '\t\ttorch.__version__              = %s\n'%torch.__version__
     COMMON_STRING += '\t\ttorch.version.cuda             = %s\n'%torch.version.cuda
     COMMON_STRING += '\t\ttorch.backends.cudnn.version() = %s\n'%torch.backends.cudnn.version()
@@ -32,14 +36,16 @@ if 1:
         NUM_CUDA_DEVICES = 1
 
     COMMON_STRING += '\t\ttorch.cuda.device_count()      = %d\n'%torch.cuda.device_count()
-    #print ('\t\ttorch.cuda.current_device()    =', torch.cuda.current_device())
-
+    COMMON_STRING += '\t\ttorch.cuda.get_device_properties() = %s\n' % str(torch.cuda.get_device_properties(0))[21:]
 
 COMMON_STRING += '\n'
 
 #---------------------------------------------------------------------------------
 ## useful : http://forums.fast.ai/t/model-visualization/12365/2
 
+## pip install torch==1.4.0+cu101 torchvision==0.5.0+cu101 -f https://download.pytorch.org/whl/torch_stable.html
+## pip install https://download.pytorch.org/whl/cu101/torch-1.4.0-cp37-cp37m-linux_x86_64.whl
+## pip install https://download.pytorch.org/whl/cu101/torchvision-0.5.0-cp37-cp37m-linux_x86_64.whl
 
 if __name__ == '__main__':
     print (COMMON_STRING)

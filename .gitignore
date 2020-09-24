@@ -1,3 +1,5 @@
 
 data/
 __pycache__/
+lib/
+remote.py
