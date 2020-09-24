@@ -1,3 +1,4 @@
+#%%
 from common import *
 from lib.net.layer_np import *
 
@@ -10,7 +11,7 @@ error_col  = ['reactivity_error', 'deg_error_Mg_pH10', 'deg_error_Mg_50C', 'deg_
 rna_dict    = {x:i for i, x in enumerate('ACGU')} #4
 struct_dict = {x:i for i, x in enumerate('().')}  #3
 loop_dict   = {x:i for i, x in enumerate('BEHIMSX')}#7
-
+#%%
 # df_train  = pd.read_json(data_dir+'/train.json', lines=True)
 # df_test   = pd.read_json(data_dir+'/test.json', lines=True)
 # df_sample = pd.read_csv(data_dir+'/sample_submission.csv')
@@ -168,8 +169,10 @@ def null_collate(batch):
 
 ##################################################################
 
-def run_check_dataset():
-
+#%%
+# main #################################################################
+if __name__ == '__main__':
+    print('%s: calling main function ... ' % os.path.basename(__file__))
     if 1:
         train_index, valid_index = make_train_split()
         print('t_index %d:'%(len(train_index[0])), train_index[0][:8], 'valid_index %d:'%(len(valid_index[0])), valid_index[0][:8], )
@@ -179,7 +182,7 @@ def run_check_dataset():
         #exit(0)
 
     #---
-
+#%%
     df = pd.read_json(data_dir+'/train.json', lines=True)
     df = df[df['signal_to_noise']>1].reset_index(drop=False)
     dataset = RNADataset(
@@ -187,11 +190,11 @@ def run_check_dataset():
         augment=None,
     )
     print(dataset)
-
+#%%
     if 1:
         start_timer = timer()
         for i in range(len(dataset)):
-            if i == 10: break
+            if i == 5: break
 
             r = dataset[i]
             print('i:', i)
@@ -202,7 +205,7 @@ def run_check_dataset():
             print('\terror:', r['error'][:5].tolist(), '...', r['error'].shape)
             print('\tseq:', r['seq'][:5].astype(np.uint8).tolist(), '...', r['seq'].shape)
 
-
+#%%
     if 1:
         data_loader = DataLoader(
             dataset,
@@ -210,7 +213,7 @@ def run_check_dataset():
             batch_size=8,
             drop_last=False,
             num_workers=0,
-            pin_memory=True,
+            pin_memory=False,
             collate_fn=null_collate
         )
         print(len(data_loader.sampler))
@@ -219,19 +222,15 @@ def run_check_dataset():
         print(len(dataset))
 
         start_timer = timer()
-        for t, (seq, target, error, index) in enumerate(data_loader):
-            if t == 10: break
+        for t, (seq, target, error, signal_to_noise, index) in enumerate(data_loader):
+            if t == 5: break
 
             print('[%d]' % t, time_to_str(timer() - start_timer, 'min'))
             print('\t index :', index[:5], '...')
             print('\t error :', error.shape, target.is_contiguous())
             print('\t truth :', target.shape, target.is_contiguous())
+            print('\t signal_to_noise :', signal_to_noise.shape, signal_to_noise.is_contiguous())
             print('\t seq :', seq.shape, seq.is_contiguous())
             print('')
 
-
-# main #################################################################
-if __name__ == '__main__':
-    print('%s: calling main function ... ' % os.path.basename(__file__))
-
-    run_check_dataset()
+    

@@ -31,7 +31,7 @@ def do_valid(net, valid_loader, is_mixed_precision):
 
         valid_num = 0
         for t, (seq, target, error, signal_to_noise, index) in enumerate(valid_loader):
-            seq = seq.cuda()
+            # seq = seq.cuda()
 
             if is_mixed_precision:
                 with amp.autocast():
@@ -72,9 +72,9 @@ def run_train():
 
 
     for fold in [1,2,3,4]:#,1,2,3,4  #0, 1,2,3,4
-        out_dir = '/root/share1/kaggle/2020/open_vaccine/result/simple-tx3-snr/sn1-fold-%d'%fold
-        initial_checkpoint = \
-            None #out_dir + '/checkpoint/00007200_model.pth' #
+        out_dir = '/Users/scao/Documents/Coding/openvaccine-covid-19/result/sn1-fold-%d'%fold
+        initial_checkpoint = None
+             #out_dir + '/checkpoint/00007200_model.pth' #
 
         is_mixed_precision = False #False #True #
         start_lr   = 0.00125#1
@@ -142,11 +142,12 @@ def run_train():
 
         if is_mixed_precision:
             scaler = amp.GradScaler() #not used
-            net = AmpNet().cuda()
+            # net = AmpNet().cuda()
+            net = AmpNet()
         else:
             net = Net()
             #print(net)
-            net = net.cuda()
+            # net = net.cuda()
 
 
         #-----
@@ -180,8 +181,8 @@ def run_train():
         optimizer = Lookahead(RAdam(filter(lambda p: p.requires_grad, net.parameters()), lr=start_lr), alpha=0.5, k=5)
 
         num_iteration = int(10.0 * 1000)
-        iter_log   = 200
-        iter_valid = 200
+        iter_log   = 100
+        iter_valid = 100
         iter_save  = list(range(0, num_iteration, 200))  # 1*1000
 
         log.write('optimizer\n  %s\n' % (optimizer))
@@ -208,7 +209,7 @@ def run_train():
                 loss = train_loss
 
             text = \
-                '%0.5f  %5.2f%s %5.1f | ' % (rate, iteration / 10000, asterisk, epoch,) + \
+                '%4.5f  %5.4d %s %5.1f | ' % (rate, iteration, asterisk, epoch,) + \
                 '%4.3f  %4.3f  |  %4.3f  %4.3f  %4.3f  |  %4.3f   %4.3f  | ' % (*valid_loss,) + \
                 '%4.3f  %4.3f  | ' % (*loss,) + \
                 '%s' % (time_to_str(timer() - start_timer, 'min'))
@@ -261,10 +262,10 @@ def run_train():
 
 
                 # one iteration update  -------------
-                target = target.cuda()
-                error  = error.cuda()
-                signal_to_noise  = signal_to_noise.cuda()
-                seq = seq.cuda()
+                # target = target.cuda()
+                # error  = error.cuda()
+                # signal_to_noise  = signal_to_noise.cuda()
+                # seq = seq.cuda()
 
 
                 net.train()
