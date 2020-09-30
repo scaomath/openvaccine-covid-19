@@ -13,11 +13,8 @@ import PIL
 import cv2
 import matplotlib
 matplotlib.use('TkAgg')
-#matplotlib.use('WXAgg')
-#matplotlib.use('Qt4Agg')
-#matplotlib.use('Qt5Agg')
 print('matplotlib.get_backend : ', matplotlib.get_backend())
-#print(matplotlib.__version__)
+print(matplotlib.__version__)
 
 
 # std libs
@@ -52,7 +49,7 @@ from mpl_toolkits.mplot3d import Axes3D
 # constant #
 PI  = np.pi
 INF = np.inf
-EPS = 1e-12
+EPS = 1e-13
 
 def seed_py(seed):
     random.seed(seed)
