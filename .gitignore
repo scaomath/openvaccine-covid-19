@@ -2,3 +2,6 @@
 data/
 __pycache__/
 *.txt
+submissions/
+*.csv
+submission.py

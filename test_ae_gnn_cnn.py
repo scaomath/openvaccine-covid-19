@@ -16,7 +16,7 @@ from tqdm import tqdm
 pretrain_dir = None # model dir for resuming training. if None, train from scrach
 DEBUG = True
 one_fold = False # if True, train model at only first fold. use if you try a new idea quickly.
-run_test = True # if True, use small data. you can check whether this code run or not
+run_test = False # if True, use small data. you can check whether this code run or not
 denoise = True # if True, use train data whose signal_to_noise > 1
 
 ae_epochs = 20 # epoch of training of denoising auto encoder
