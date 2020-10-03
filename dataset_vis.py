@@ -24,10 +24,10 @@ for c in train.columns:
     if train[c].dtype == 'object':
         print(c, ':', train[c].apply(lambda x: len(x))[0])
 # %%
-def plot_sample(idx = 1):
+def plot_sample(idx = 1, df=train):
     fig = plt.figure(figsize=(15,15))
     fig.patch.set_facecolor((0.75,0.75,0.8))
-    samp = train[train.index== idx]
+    samp = df[df.index== idx]
     rna = []
     seq = samp.loc[samp.index[0], 'sequence']
     struct = samp.loc[samp.index[0], 'structure']
@@ -35,5 +35,5 @@ def plot_sample(idx = 1):
     fvm.plot_rna(bg, text_kwargs={"fontweight":"black"}, lighten=0.8,backbone_kwargs={"linewidth":3})
     plt.show()
 # %%
-plot_sample(1)
+plot_sample(idx=2)
 # %%

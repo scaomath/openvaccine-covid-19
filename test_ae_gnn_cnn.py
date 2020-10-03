@@ -10,8 +10,7 @@ import matplotlib.pyplot as plt
 import scipy.sparse as sparse
 import json
 from tqdm import tqdm
-%matplotlib inline
-
+import RNA
 # %%
 pretrain_dir = None # model dir for resuming training. if None, train from scrach
 DEBUG = True
@@ -121,7 +120,7 @@ Ss_pub = get_structure_adj(test_pub)
 Ss_pri = get_structure_adj(test_pri)
 
 #%% explicit un-enscapuslated routine of get_structure_adj for id #1
-i = 1
+i = 0
 seq_length = train["seq_length"].iloc[i]
 structure = train["structure"].iloc[i]
 sequence = train["sequence"].iloc[i]
@@ -144,15 +143,17 @@ for i in tqdm(range(seq_length)):
         a_structures[(sequence[start], sequence[i])][start, i] = 1
         a_structures[(sequence[i], sequence[start])][i, start] = 1
 a_strc = np.stack([a for a in a_structures.values()], axis = 2)
+a_neighbor = np.diag(np.ones(seq_length-1),-1) + np.diag(np.ones(seq_length-1),1)
+a_strc = np.concatenate([a_strc, a_neighbor[...,None]], axis = 2)
 a_strc = np.sum(a_strc, axis = 2, keepdims = True)
 
-#%% base pairing prob plot vs structure
+# base pairing prob plot vs structure
 fig, axes = plt.subplots(2, 2, figsize=(10,10))
 axes = axes.flatten()
 a_strc = a_strc.squeeze()
 axes[0].spy(a_strc)
 axes[1].spy(As[1])
-axes[2].spy(As[1]*(As[1]>1e-1))
+axes[2].spy(As[1]*(As[1]>1e-2))
 axes[3].spy(As[1]*(a_strc>0))
 
 # %% visualize the neighboring struct in train
@@ -197,7 +198,7 @@ Ds_pub = get_distance_matrix(As_pub)
 Ds_pri = get_distance_matrix(As_pri)
 
 # %%
-## concat adjecent
+## concat adjacent
 As = np.concatenate([As[:,:,:,None], Ss, Ds], axis = 3).astype(np.float32)
 As_pub = np.concatenate([As_pub[:,:,:,None], Ss_pub, Ds_pub], axis = 3).astype(np.float32)
 As_pri = np.concatenate([As_pri[:,:,:,None], Ss_pri, Ds_pri], axis = 3).astype(np.float32)
@@ -211,7 +212,25 @@ def return_ohe(n, i):
     tmp[i] = 1
     return tmp
 
-def get_input(train):
+def get_inverse_distance_to_loop(sequence, loop_type):
+    '''
+    compute the graph distance of each base to the near loop
+    '''
+    prev = float('-inf')
+    Dist = []
+    for i, x in enumerate(sequence):
+        if x == loop_type: 
+            prev = i
+        Dist.append(i - prev)
+
+    prev = float('inf')
+    for i in range(len(sequence) - 1, -1, -1):
+        if sequence[i] == loop_type: prev = i
+        Dist[i] = min(Dist[i], prev - i)
+    Dist = 1/(np.array(Dist)+1)**2
+    return Dist*(Dist>0.02)
+
+def get_input(train, As):
     '''
     get node features, which is one hot encoded
     S: paired "Stem"
@@ -252,12 +271,33 @@ def get_input(train):
         ohes.append(a == v)
     ohes = np.stack(ohes, axis = 2)
     X_node = np.concatenate([X_node, ohes], axis = 2).astype(np.float32)
+
+    ## inverse distance to loops and positional entroy
+    vocab = ["M", "I", "B", "H", "E", "X"]
+    dist_inv_to_loops = np.zeros((train.shape[0], As.shape[1], len(vocab)))
+    positional_entropy = np.zeros((train.shape[0], As.shape[1], 1))
+    for i in tqdm(range(len(train))):
+        idx = train.index[i]
+        for j, s in enumerate(vocab):
+            dist_inv_to_loops[i,:,j] = get_inverse_distance_to_loop(train["predicted_loop_type"][idx], s)
+        # fc = RNA.fold_compound(train['sequence'][idx])
+        # mfe_struct, mfe = fc.mfe()
+        # fc.exp_params_rescale(mfe)
+        # pp, fp = fc.pf()
+        # entropy = fc.positional_entropy()
+        # positional_entropy[i,:,0] = np.array(entropy)[1:]
+    
+    X_node = np.concatenate([dist_inv_to_loops, X_node], axis = 2)
+    # X_node = np.concatenate([dist_inv_to_loops,positional_entropy, X_node], axis = 2)
+
+    ## positional entropy
+
     print(X_node.shape, '\n')
     return X_node
 
-X_node = get_input(train)
-X_node_pub = get_input(test_pub)
-X_node_pri = get_input(test_pri)
+X_node = get_input(train, As)
+X_node_pub = get_input(test_pub, As_pub)
+X_node_pri = get_input(test_pri, As_pri)
 
 
 #%% ohe of A G C U base
@@ -294,6 +334,18 @@ if DEBUG:
         ohes.append(a == v)
     ohes = np.stack(ohes, axis = 2)
 
+#%%
+if DEBUG:
+    for i, row in train.iterrows():
+        break
+
+    seq = row.sequence
+    fc = RNA.fold_compound(seq)
+    mfe_struct, mfe = fc.mfe()
+    fc.exp_params_rescale(mfe)
+    pp, fp = fc.pf()
+    entropy = fc.positional_entropy()
+    print(entropy)
 
 #%% model
 import tensorflow as tf
@@ -408,7 +460,7 @@ def get_base(config):
     x4 = forward(x3, 16, kernel = 30, rate = 0.1)
     x = L.Concatenate()([x1, x2, x3, x4])
     
-    for unit in [64, 32]:
+    for unit in [128, 64, 32]:
         x_as = []
         for i in range(adj_all.shape[3]):
             x_a = adj_attn(x, adj_all[:, :, :, i], unit, rate = 0.0)
@@ -434,7 +486,7 @@ def get_ae_model(base, config):
     adj = tf.keras.Input(shape = (None, None, As.shape[3]), name = "adj")
 
     x = base([L.SpatialDropout1D(0.4)(node), adj])
-    x = forward(x, 64, rate = 0.3)
+    x = forward(x, 128, rate = 0.3)
     p = L.Dense(X_node.shape[2], "sigmoid")(x)
     
 #     loss = - tf.reduce_mean(40 * node * tf.math.log(p + 1e-6) + (1 - node) * tf.math.log(1 - p + 1e-6))
@@ -460,15 +512,28 @@ def get_model(base, config):
 
     model = tf.keras.Model(inputs = [node, adj], outputs = [x])
     
-    opt = get_optimizer()
+    opt = tf.optimizers.Adam()
     model.compile(optimizer = opt, loss = mcrmse_loss)
     return model
 
-def get_optimizer():
-#     opt = tf.keras.optimizers.SGD(0.05, momentum = 0.9, nesterov=True)
-    opt = tf.optimizers.Adam()
-    return opt
 
+#%%
+import torch
+import torch.nn as nn
+inp = torch.tensor([1.0, 2.0, 3, 4, 5])
+print(inp)
+print()
+
+outplace_dropout = nn.Dropout(p=0.2)
+output = outplace_dropout(inp)
+print(output)
+print(inp) # Notice that the input doesn't get changed here
+print()
+
+inplace_droput = nn.Dropout(p=0.2, inplace=True)
+output = inplace_droput(inp)
+print(inp) # Notice that the input is changed now
+print(output)
 # %%
 if __name__ == "__main__":
     print("Just a test file, run in script mode")
