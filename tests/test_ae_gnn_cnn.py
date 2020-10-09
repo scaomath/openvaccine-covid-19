@@ -31,7 +31,7 @@ if pretrain_dir is not None:
     for d in glob.glob(pretrain_dir + "*"):
         shutil.copy(d, ".")
 # %%
-data_dir = './data/'
+data_dir = '../data/'
 train = pd.read_json(data_dir+"train.json",lines=True)
 if denoise:
     train = train[train.signal_to_noise > 1].reset_index(drop = True)
@@ -39,7 +39,7 @@ test  = pd.read_json(data_dir+"test.json",lines=True)
 test_pub = test[test["seq_length"] == 107]
 test_pri = test[test["seq_length"] == 130]
 sub = pd.read_csv(data_dir+"/sample_submission.csv")
-
+#%%
 if run_test: ## to test 
     train = train[:30]
     test_pub = test_pub[:30]

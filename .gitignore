@@ -5,3 +5,6 @@ __pycache__/
 submissions/
 *.csv
 submission.py
+tests/.ipynb_checkpoints/covid-ae-pretrain-gnn-attn-cnn-checkpoint.ipynb
+tests/covid-ae-pretrain-gnn-attn-cnn.ipynb
+submission1.py
