@@ -1,11 +1,13 @@
+#%%
 from tensorflow.keras import activations, initializers, regularizers, constraints
 from tensorflow.keras import backend as K
 from tensorflow.keras.layers import Layer
 
-from spektral.layers import ops
-from spektral.utils import localpooling_filter
+from spektral.layers import ops, DiffPool
+# from spektral.utils import localpooling_filter
+# from spektral.utils import *
 
-
+#%%
 class GraphConv(Layer):
     r"""
     A graph convolutional layer (GCN) as presented by
@@ -24,7 +26,7 @@ class GraphConv(Layer):
 
     - Node features of shape `([batch], N, F)`;
     - Modified Laplacian of shape `([batch], N, N)`; can be computed with
-    `spektral.utils.convolution.localpooling_filter`.
+    `spektral.utils.convolution.localpooling_filter`. (No longer available Sept 2020)
 
     **Output**
 
